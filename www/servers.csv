@@ -1,0 +1,7 @@
+PSK,Address,Name,CN
+
+my_secret_key,10.0.0.1:22,Big Server,big
+my_secret_key,10.0.0.2:22,Small Server,small
+
+my_second_secret,172.16.2.2,Router,router
+

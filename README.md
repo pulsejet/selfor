@@ -11,7 +11,7 @@ HSET 103.4.1.33 d 10.100.100.100:22
 HSET 103.4.1.33 i myuser
 EXPIRE 103.4.1.3 3600
 ```
-Such calls may be made by an externally authenticated application (e.g. by a web interface).
+Such calls may be made by an externally authenticated application (e.g. by a web interface). An example application in PHP (without any authentication) is provided in this repo.
 
 ## PROXY protocol
 Connections from nginx stream module are supported with remote identification with PROXY protocol
