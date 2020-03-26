@@ -4,6 +4,7 @@ import (
     "io"
     "log"
     "net"
+    "os"
 
     redis "github.com/go-redis/redis/v7"
     proxyproto "github.com/pires/go-proxyproto"
@@ -13,6 +14,14 @@ var localServerHost = ":2221"
 var redisClient *redis.Client
 
 func main() {
+    // Setup logging
+    logfile, err := os.OpenFile("selfor.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0600)
+    if err != nil {
+        log.Fatalf("Error opening file: %v", err)
+    }
+    defer logfile.Close()
+    log.SetOutput(logfile)
+
     // Listen for connections
     ln, err := net.Listen("tcp", localServerHost)
     if err != nil {
