@@ -12,10 +12,12 @@ import (
 )
 
 var redisClient *redis.Client
+var proxy *string
 
 func main() {
     // Define flags
     localServerHost := flag.String("bind", ":2221", "Address to bind on")
+    proxy = flag.String("proxy", "", "Trusted reverse proxy to allow PROXY from")
     logpath := flag.String("log", "selfor.log", "Path of log file")
     redisHost := flag.String("redis", "localhost:6379", "Address of redis instance")
     redisPassword := flag.String("redis-pw", "", "Password of redis database")
@@ -39,9 +41,11 @@ func main() {
     }
     log.Println("Port forwarding server up and listening on", *localServerHost)
 
-    // Wrap listener in a proxyproto listener
-    proxyListener := &proxyproto.Listener{Listener: ln}
-    defer proxyListener.Close()
+    // Setup PROXY support
+    if *proxy != "" {
+        ln = &proxyproto.Listener{Listener: ln}
+    }
+    defer ln.Close()
 
     // Connect to redis
     redisClient = redis.NewClient(&redis.Options{
@@ -52,7 +56,7 @@ func main() {
 
     // Handle each connection in a goroutine
     for {
-        conn, err := proxyListener.Accept()
+        conn, err := ln.Accept()
         if err != nil {
             log.Fatal(err)
         }
@@ -71,10 +75,25 @@ func forward(src, dest net.Conn) {
 func handleConnection(c net.Conn) {
     // Get remote address
     remoteAddr := ""
-
     switch addr := c.RemoteAddr().(type) {
     case *net.TCPAddr:
         remoteAddr = addr.IP.String()
+    }
+
+    // Check if PROXY is valid
+    if *proxy != "" {
+        // Check local address
+        localAddr := ""
+        switch addr := c.LocalAddr().(type) {
+        case *net.TCPAddr:
+            localAddr = addr.IP.String()
+        }
+
+        // Check if local address matches proxy
+        if localAddr != *proxy {
+            remoteAddr = localAddr
+            log.Println("WARN: Direct connection in PROXY mode from:", localAddr)
+        }
     }
 
     // Log new connection
