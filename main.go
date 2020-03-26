@@ -83,7 +83,7 @@ func handleConnection(c net.Conn) {
     // Get destination address
     data, err := redisClient.HGetAll(remoteAddr).Result()
     if err != nil {
-        log.Println("No mapping found for IP:", remoteAddr)
+        log.Println("No mapping found for IP:", remoteAddr, "r:", err)
         c.Close();
         return
     }
