@@ -5,17 +5,27 @@ import (
     "log"
     "net"
     "os"
+    "flag"
 
     redis "github.com/go-redis/redis/v7"
     proxyproto "github.com/pires/go-proxyproto"
 )
 
-var localServerHost = ":2221"
 var redisClient *redis.Client
 
 func main() {
+    // Define flags
+    localServerHost := flag.String("bind", ":2221", "Address to bind on")
+    logpath := flag.String("log", "selfor.log", "Path of log file")
+    redisHost := flag.String("redis", "localhost:6379", "Address of redis instance")
+    redisPassword := flag.String("redis-pw", "", "Password of redis database")
+    redisDB := flag.Int("redis-db", 0, "Database number of redis")
+
+    // Get flags
+    flag.Parse()
+
     // Setup logging
-    logfile, err := os.OpenFile("selfor.log", os.O_RDWR | os.O_CREATE | os.O_APPEND, 0600)
+    logfile, err := os.OpenFile(*logpath, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0600)
     if err != nil {
         log.Fatalf("Error opening file: %v", err)
     }
@@ -23,11 +33,11 @@ func main() {
     log.SetOutput(logfile)
 
     // Listen for connections
-    ln, err := net.Listen("tcp", localServerHost)
+    ln, err := net.Listen("tcp", *localServerHost)
     if err != nil {
         log.Fatal(err)
     }
-    log.Println("Port forwarding server up and listening on", localServerHost)
+    log.Println("Port forwarding server up and listening on", *localServerHost)
 
     // Wrap listener in a proxyproto listener
     proxyListener := &proxyproto.Listener{Listener: ln}
@@ -35,9 +45,9 @@ func main() {
 
     // Connect to redis
     redisClient = redis.NewClient(&redis.Options{
-        Addr:     "localhost:6379",
-        Password: "",
-        DB:       0,
+        Addr:     *redisHost,
+        Password: *redisPassword,
+        DB:       *redisDB,
     })
 
     // Handle each connection in a goroutine
